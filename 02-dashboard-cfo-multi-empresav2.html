@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rose Decor — CFO Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--void:#06080d;--base:#0c1017;--surf:#131a27;--elev:#1a2336;--hover:#1f2b42;--b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.09);--b3:rgba(255,255,255,.14);--t1:#eef2f9;--t2:#8a95ad;--t3:#556178;--em:#3de8a0;--em-d:rgba(61,232,160,.12);--cr:#ff6b7a;--cr-d:rgba(255,107,122,.12);--sk:#5eaaff;--sk-d:rgba(94,170,255,.12);--gd:#ffc145;--gd-d:rgba(255,193,69,.12);--vi:#b18cff;--vi-d:rgba(177,140,255,.12);--ro:#e8728a;--ro-d:rgba(232,114,138,.15);--r1:8px;--r2:12px;--fd:'Outfit',sans-serif;--fm:'JetBrains Mono',monospace;--tr:.2s cubic-bezier(.4,0,.2,1)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--fd);background:var(--void);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--b3);border-radius:3px}
+.app{display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sb{width:250px;background:var(--base);border-right:1px solid var(--b1);padding:20px 12px;display:flex;flex-direction:column;position:fixed;height:100vh;z-index:100;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 20px;border-bottom:1px solid var(--b1);margin-bottom:16px}
+.brand-m{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--ro),#c85a72);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff;box-shadow:0 4px 16px rgba(232,114,138,.35)}
+.brand-t span:first-child{font-weight:700;font-size:14px}.brand-t span:last-child{font-size:10px;color:var(--t3);font-weight:600;letter-spacing:1.2px;text-transform:uppercase;display:block;margin-top:1px}
+.nav{flex:1;display:flex;flex-direction:column;gap:2px}
+.ns{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);padding:14px 10px 6px;font-weight:700}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r1);cursor:pointer;font-size:13px;color:var(--t2);font-weight:500;transition:var(--tr);position:relative}
+.ni:hover{background:var(--surf);color:var(--t1)}.ni.ac{background:var(--ro-d);color:var(--ro)}
+.ni.ac::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:18px;background:var(--ro);border-radius:0 3px 3px 0}
+.nic{width:18px;text-align:center;font-size:14px}
+.emp-switch{margin:12px 0;padding:8px;background:var(--surf);border-radius:var(--r1);border:1px solid var(--b1)}
+.emp-switch-label{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--t3);font-weight:700;margin-bottom:6px;padding:0 4px}
+.emp-tabs{display:flex;gap:3px}
+.emp-tab{flex:1;padding:7px 4px;border-radius:6px;border:none;font-family:var(--fd);font-size:10px;font-weight:600;cursor:pointer;transition:var(--tr);background:transparent;color:var(--t3);text-align:center}
+.emp-tab:hover{background:var(--elev);color:var(--t2)}.emp-tab.ac{color:#fff}
+.emp-tab[data-emp="consolidado"].ac{background:var(--ro);box-shadow:0 2px 8px rgba(232,114,138,.3)}
+.emp-tab[data-emp="loja"].ac{background:#2d7a5e;box-shadow:0 2px 8px rgba(61,232,160,.2)}
+.emp-tab[data-emp="ensino"].ac{background:#5a48b5;box-shadow:0 2px 8px rgba(177,140,255,.2)}
+.sb-ft{padding-top:14px;border-top:1px solid var(--b1)}
+.cs{display:flex;align-items:center;gap:7px;padding:5px 10px;font-size:11px;color:var(--t3)}
+.cd{width:7px;height:7px;border-radius:50%;background:var(--em);box-shadow:0 0 8px rgba(61,232,160,.3);animation:pu 2s infinite}
+.cd.off{background:var(--cr);box-shadow:0 0 8px rgba(255,107,122,.3)}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* MAIN */
+.mn{flex:1;margin-left:250px;padding:20px 28px 40px}
+.cfgbar{background:var(--gd-d);border:1px solid rgba(255,193,69,.2);border-radius:var(--r2);padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:13px}
+.cfgbar.h{display:none}
+.cfgbar input{flex:1;background:var(--surf);border:1px solid var(--b2);border-radius:6px;padding:8px 12px;color:var(--t1);font-family:var(--fm);font-size:12px;outline:none}
+.cfgbar input:focus{border-color:var(--gd)}
+.cfgbar button{padding:8px 16px;border-radius:6px;border:none;font-family:var(--fd);font-weight:600;font-size:12px;cursor:pointer}
+.btn-sv{background:var(--gd);color:#0c1017}.btn-cl{background:transparent;color:var(--t3);border:1px solid var(--b2)!important}
+.hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.hd h1{font-size:22px;font-weight:700;letter-spacing:-.3px}
+.hd p{font-size:12px;color:var(--t2);margin-top:2px}
+.hd-a{display:flex;align-items:center;gap:10px}
+.emp-indicator{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.3px}
+.emp-indicator.consolidado{background:var(--ro-d);color:var(--ro)}
+.emp-indicator.loja{background:var(--em-d);color:var(--em)}
+.emp-indicator.ensino{background:var(--vi-d);color:var(--vi)}
+.ptabs{display:flex;background:var(--surf);border-radius:var(--r1);border:1px solid var(--b1);overflow:hidden}
+.pt{padding:7px 14px;font-size:11px;font-weight:600;background:none;border:none;color:var(--t3);cursor:pointer;font-family:var(--fd);transition:var(--tr)}
+.pt.ac{background:var(--ro);color:#fff}.pt:hover:not(.ac){color:var(--t2)}
+.bsync{display:flex;align-items:center;gap:5px;padding:7px 14px;background:var(--surf);border:1px solid var(--b1);border-radius:var(--r1);color:var(--t2);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--fd);transition:var(--tr)}
+.bsync:hover{border-color:var(--em);color:var(--em)}.bsync.ld{pointer-events:none;opacity:.6}
+.stm{font-size:10px;color:var(--t3);font-family:var(--fm)}
+.al{display:none;align-items:center;gap:10px;padding:11px 16px;border-radius:var(--r1);margin-bottom:20px;font-size:12px}
+.al.warn{background:var(--cr-d);border:1px solid rgba(255,107,122,.15);color:var(--cr)}
+.al.info{background:var(--gd-d);border:1px solid rgba(255,193,69,.15);color:var(--gd)}
+.al-x{margin-left:auto;background:none;border:none;color:inherit;cursor:pointer;font-size:14px;opacity:.5}.al-x:hover{opacity:1}
+.sec{display:none}.sec.ac{display:block;animation:fu .3s ease}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.kg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.k{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r2);padding:18px;position:relative;overflow:hidden;transition:var(--tr)}
+.k:hover{border-color:var(--b3);transform:translateY(-1px)}
+.k::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.k.em::after{background:var(--em)}.k.sk::after{background:var(--sk)}.k.gd::after{background:var(--gd)}.k.vi::after{background:var(--vi)}.k.ro::after{background:var(--ro)}
+.kt{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.kl{font-size:11px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.kb{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px}
+.kv{font-family:var(--fm);font-size:22px;font-weight:700;letter-spacing:-1px;margin-bottom:8px}
+.kv.ld{background:var(--elev);border-radius:4px;color:transparent;animation:sh 1.5s infinite}
+@keyframes sh{0%{opacity:.5}50%{opacity:1}100%{opacity:.5}}
+.kf{display:flex;align-items:center;gap:6px}
+.ktg{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px}
+.ktg.up{background:var(--em-d);color:var(--em)}.ktg.dn{background:var(--cr-d);color:var(--cr)}
+.kn{font-size:10px;color:var(--t3)}
+.kpi-split{display:flex;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid var(--b1)}
+.kpi-split-item{flex:1;font-size:9px;color:var(--t3);text-align:center}
+.kpi-split-item .val{font-family:var(--fm);font-size:11px;font-weight:700;display:block;margin-top:1px}
+.kpi-split-item .val.em-c{color:var(--em)}.kpi-split-item .val.vi-c{color:var(--vi)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:22px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:22px}
+.cd2{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r2);padding:18px;overflow:hidden}
+.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.ct{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+.bg{font-size:9px;padding:2px 7px;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.bg-l{background:var(--em-d);color:var(--em)}.bg-s{background:var(--sk-d);color:var(--sk)}.bg-c{background:var(--vi-d);color:var(--vi)}.bg-w{background:var(--gd-d);color:var(--gd)}.bg-r{background:var(--cr-d);color:var(--cr)}
+.csb{font-size:10px;color:var(--t3);margin-top:2px}
+.chb{position:relative;height:260px;width:100%}
+
+/* DRE v2 — previsto vs realizado */
+.dt{width:100%;border-collapse:collapse}
+.dt th{text-align:left;font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;padding:7px 10px;border-bottom:1px solid var(--b2);font-weight:700}
+.dt th:not(:first-child){text-align:right}
+.dt td{padding:8px 10px;font-size:12px;border-bottom:1px solid var(--b1)}
+.dt td:not(:first-child){text-align:right;font-family:var(--fm);font-size:11px}
+.dt tr:hover td{background:rgba(255,255,255,.015)}
+.dt .rh{font-weight:700;color:var(--t1)}.dt .rs{padding-left:24px;color:var(--t2)}
+.dt .rt{font-weight:700;border-top:2px solid var(--b2);border-bottom:2px solid var(--b2)}.dt .rt td{padding:10px}
+.dt .pos{color:var(--em)}.dt .neg{color:var(--cr)}.dt .warn{color:var(--gd)}
+.dt .delta-pos{color:var(--em);font-size:10px}.dt .delta-neg{color:var(--cr);font-size:10px}
+.fonte-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;padding:1px 6px;border-radius:3px;font-weight:700;vertical-align:middle;margin-left:4px}
+.fonte-asaas{background:var(--em-d);color:var(--em)}.fonte-sheets{background:var(--sk-d);color:var(--sk)}
+
+/* TX */
+.txl{display:flex;flex-direction:column;gap:6px}
+.txr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--base);border-radius:var(--r1);border:1px solid transparent;transition:var(--tr)}
+.txr:hover{border-color:var(--b1)}
+.txle{display:flex;align-items:center;gap:10px}
+.txi{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px}
+.txi.in{background:var(--em-d)}.txi.out{background:var(--cr-d)}.txi.pend{background:var(--gd-d)}
+.txf h4{font-size:12px;font-weight:600;margin-bottom:1px}.txf span{font-size:10px;color:var(--t3)}
+.txri{text-align:right}
+.txa{font-family:var(--fm);font-size:13px;font-weight:700}.txa.in{color:var(--em)}.txa.out{color:var(--cr)}.txa.pend{color:var(--gd)}
+.txd{font-size:10px;color:var(--t3)}
+.st{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700}
+.st-p{background:var(--em-d);color:var(--em)}.st-w{background:var(--gd-d);color:var(--gd)}.st-o{background:var(--cr-d);color:var(--cr)}.st-c{background:var(--vi-d);color:var(--vi)}
+.emp-tag{display:inline-flex;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.3px;margin-left:4px}
+.emp-tag.loja{background:var(--em-d);color:var(--em)}.emp-tag.ensino{background:var(--vi-d);color:var(--vi)}
+
+/* BANK */
+.bi{padding:14px;background:var(--base);border-radius:var(--r1);margin-bottom:10px;border:1px solid transparent;transition:var(--tr)}
+.bi:hover{border-color:var(--b1)}
+.btp{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.bn{display:flex;align-items:center;gap:7px}.bdt{width:9px;height:9px;border-radius:50%}.bn span{font-size:12px;font-weight:600}
+.bbl{font-family:var(--fm);font-size:20px;font-weight:700;margin-bottom:5px}
+.bch{font-size:10px;color:var(--t3);display:flex;align-items:center;gap:4px}
+.gl{margin-bottom:18px}
+.glt{display:flex;justify-content:space-between;margin-bottom:6px}
+.gll{font-size:12px;font-weight:600}.gln{font-family:var(--fm);font-size:11px;color:var(--t2)}
+.glk{height:7px;background:var(--base);border-radius:4px;overflow:hidden}
+.glf{height:100%;border-radius:4px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.glp{font-size:10px;color:var(--t3);text-align:right;margin-top:3px}
+.mr{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--b1)}
+.mr:last-child{border-bottom:none}
+.ml{font-size:12px;color:var(--t2)}.mv{font-family:var(--fm);font-size:13px;font-weight:700}
+.sm{text-align:center;padding:40px 20px;color:var(--t3)}
+.sm .ic{font-size:36px;margin-bottom:12px}.sm h3{font-size:16px;color:var(--t2);margin-bottom:6px}.sm p{font-size:12px;max-width:380px;margin:0 auto}
+
+/* CONCILIAÇÃO */
+.conc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.conc-stat{padding:12px;border-radius:var(--r1);text-align:center;border:1px solid transparent}
+.conc-stat.ok{background:var(--em-d);border-color:rgba(61,232,160,.15)}
+.conc-stat.pend{background:var(--gd-d);border-color:rgba(255,193,69,.15)}
+.conc-stat.miss{background:var(--cr-d);border-color:rgba(255,107,122,.15)}
+.conc-stat.new{background:var(--vi-d);border-color:rgba(177,140,255,.15)}
+.conc-stat-n{font-family:var(--fm);font-size:22px;font-weight:700}
+.conc-stat.ok .conc-stat-n{color:var(--em)}.conc-stat.pend .conc-stat-n{color:var(--gd)}
+.conc-stat.miss .conc-stat-n{color:var(--cr)}.conc-stat.new .conc-stat-n{color:var(--vi)}
+.conc-stat-l{font-size:10px;color:var(--t3);margin-top:3px}
+.conc-row{display:grid;grid-template-columns:80px 1fr 120px 120px 110px 120px;gap:8px;padding:9px 12px;border-radius:6px;border:1px solid transparent;margin-bottom:4px;align-items:center;font-size:11px;transition:var(--tr)}
+.conc-row:hover{background:rgba(255,255,255,.02);border-color:var(--b1)}
+.conc-row.ok{border-left:3px solid var(--em)}
+.conc-row.pend{border-left:3px solid var(--gd)}
+.conc-row.miss{border-left:3px solid var(--cr)}
+.conc-row.new{border-left:3px solid var(--vi)}
+.conc-hd{font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--b1);padding-bottom:8px;margin-bottom:8px;display:grid;grid-template-columns:80px 1fr 120px 120px 110px 120px;gap:8px}
+.conc-val{font-family:var(--fm);font-size:11px;font-weight:600}
+.conc-delta-pos{color:var(--em)}.conc-delta-neg{color:var(--cr)}.conc-delta-zero{color:var(--t3)}
+
+@media(max-width:1200px){.kg{grid-template-columns:repeat(2,1fr)}.g2,.g21,.g3{grid-template-columns:1fr}}
+@media(max-width:768px){.sb{display:none}.mn{margin-left:0;padding:14px}.kg{grid-template-columns:1fr}.hd{flex-direction:column;gap:12px;align-items:flex-start}}
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="sb">
+  <div class="brand"><div class="brand-m">R</div><div class="brand-t"><span>Rose Decor</span><span>CFO Dashboard</span></div></div>
+  <div class="emp-switch">
+    <div class="emp-switch-label">Visualizar empresa</div>
+    <div class="emp-tabs">
+      <button class="emp-tab ac" data-emp="consolidado" onclick="switchEmp('consolidado')">🏢 Ambas</button>
+      <button class="emp-tab" data-emp="loja" onclick="switchEmp('loja')">🏪 Loja</button>
+      <button class="emp-tab" data-emp="ensino" onclick="switchEmp('ensino')">🎓 Ensino</button>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="ns">Principal</div>
+    <div class="ni ac" data-sec="overview"><span class="nic">📊</span>Visão Geral</div>
+    <div class="ni" data-sec="dre"><span class="nic">📋</span>DRE</div>
+    <div class="ni" data-sec="cashflow"><span class="nic">💰</span>Fluxo de Caixa</div>
+    <div class="ni" data-sec="conciliacao"><span class="nic">🔗</span>Conciliação</div>
+    <div class="ns">Integrações</div>
+    <div class="ni" data-sec="banking"><span class="nic">🏦</span>Saldos Bancários</div>
+    <div class="ni" data-sec="goals"><span class="nic">🎯</span>Metas & KPIs</div>
+    <div class="ns">Sistema</div>
+    <div class="ni" onclick="toggleCfg()"><span class="nic">⚙️</span>Configuração</div>
+  </div>
+  <div class="sb-ft">
+    <div class="cs"><span class="cd" id="d1"></span>🏪 Asaas Loja</div>
+    <div class="cs"><span class="cd" id="d2"></span>🎓 Asaas Ensino</div>
+    <div class="cs"><span class="cd" id="d3"></span>Google Sheets</div>
+  </div>
+</nav>
+
+<main class="mn">
+  <div class="cfgbar" id="cfg">
+    <span>⚙️</span><span style="font-weight:600;color:var(--gd);white-space:nowrap">URL Web App:</span>
+    <input type="text" id="cfgUrl" placeholder="https://script.google.com/macros/s/.../exec">
+    <button class="btn-sv" onclick="saveCfg()">Conectar</button>
+    <button class="btn-cl" onclick="toggleCfg()">✕</button>
+  </div>
+
+  <div class="hd">
+    <div>
+      <h1>Painel Financeiro</h1>
+      <p><span class="emp-indicator consolidado" id="empLabel">🏢 Consolidado</span> <span id="cLabel" style="margin-left:8px">Configure a URL para conectar</span></p>
+    </div>
+    <div class="hd-a">
+      <div class="ptabs" id="ptabs"></div>
+      <button class="bsync" id="bsync" onclick="reload()">↻ Sincronizar</button>
+      <span class="stm" id="stm">—</span>
+    </div>
+  </div>
+
+  <div class="al warn" id="alBox"><span>⚠️</span><span id="alMsg"></span><button class="al-x" onclick="this.parentElement.style.display='none'">✕</button></div>
+  <div class="al info" id="alConc"><span>🔗</span><span id="alConcMsg"></span><button class="al-x" onclick="this.parentElement.style.display='none'">✕</button></div>
+
+  <!-- VISÃO GERAL -->
+  <div class="sec ac" id="sec-overview">
+    <div class="kg">
+      <!-- Receita Bruta — fonte Asaas -->
+      <div class="k em">
+        <div class="kt"><span class="kl">Receita Bruta</span><div class="kb" style="background:var(--em-d)">💵</div></div>
+        <div class="kv ld" id="kR">R$ —</div>
+        <div class="kf"><span class="kn">📡 Fonte: Asaas (realizado)</span></div>
+        <div class="kpi-split" id="kRS"></div>
+      </div>
+      <!-- Despesas — previsto vs realizado -->
+      <div class="k sk">
+        <div class="kt"><span class="kl">Despesas Realizadas</span><div class="kb" style="background:var(--sk-d)">📤</div></div>
+        <div class="kv ld" id="kD">R$ —</div>
+        <div class="kf"><span class="ktg" id="kDelta">—</span><span class="kn" id="kDN">vs previsto</span></div>
+        <div class="kpi-split" id="kDS"></div>
+      </div>
+      <!-- Lucro -->
+      <div class="k gd">
+        <div class="kt"><span class="kl">Lucro Líquido</span><div class="kb" style="background:var(--gd-d)">⭐</div></div>
+        <div class="kv ld" id="kL">R$ —</div>
+        <div class="kf"><span class="ktg" id="kLT">—</span><span class="kn" id="kLN"></span></div>
+        <div class="kpi-split" id="kLS"></div>
+      </div>
+      <!-- Saldo Asaas -->
+      <div class="k vi">
+        <div class="kt"><span class="kl">Saldo Asaas</span><div class="kb" style="background:var(--vi-d)">🏦</div></div>
+        <div class="kv ld" id="kS">R$ —</div>
+        <div class="kf"><span class="kn" id="kSN">Via API</span></div>
+        <div class="kpi-split" id="kSS"></div>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="cd2">
+        <div class="ch"><div><div class="ct">Receita vs Despesas <span class="bg bg-l">Asaas + Sheets</span></div><div class="csb">Receitas realizadas (Asaas) · Despesas previsto vs realizado</div></div></div>
+        <div class="chb"><canvas id="c1"></canvas></div>
+      </div>
+      <div class="cd2">
+        <div class="ch"><div><div class="ct">Composição de Despesas <span class="bg bg-c">Realizado</span></div></div></div>
+        <div class="chb"><canvas id="c2"></canvas></div>
+      </div>
+    </div>
+    <div class="cd2">
+      <div class="ch"><div><div class="ct">Receitas Recebidas <span class="bg bg-l">Asaas Live</span></div><div class="csb">Pagamentos confirmados — ambas as contas</div></div></div>
+      <div class="txl" id="txL"><div class="sm"><div class="ic">📡</div><h3>Conecte a Web App</h3></div></div>
+    </div>
+  </div>
+
+  <!-- DRE v2 -->
+  <div class="sec" id="sec-dre">
+    <div class="cd2">
+      <div class="ch">
+        <div>
+          <div class="ct">Demonstrativo de Resultado <span class="bg bg-l">Asaas</span> <span class="bg bg-s">Sheets</span></div>
+          <div class="csb">Receitas: Asaas (realizadas) · Despesas: Realizado (Asaas) vs Previsto (Sheets)</div>
+        </div>
+        <div style="display:flex;gap:10px;font-size:11px;align-items:center">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--em);display:inline-block"></span>Realizado</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--sk);display:inline-block"></span>Previsto</span>
+        </div>
+      </div>
+      <div id="dreBox"><div class="sm"><div class="ic">📊</div><h3>Aguardando dados...</h3></div></div>
+    </div>
+
+    <!-- Split por empresa (consolidado) -->
+    <div id="dreSplitBox" style="display:none;margin-top:14px">
+      <div class="g2">
+        <div class="cd2">
+          <div class="ch"><div><div class="ct">🏪 DRE — Rose Decor Loja <span class="bg bg-l">Asaas</span></div></div></div>
+          <div id="dreLoja"></div>
+        </div>
+        <div class="cd2">
+          <div class="ch"><div><div class="ct">🎓 DRE — Rose Decor Ensino <span class="bg bg-c">Asaas</span></div></div></div>
+          <div id="dreEnsino"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLUXO CAIXA -->
+  <div class="sec" id="sec-cashflow">
+    <div class="kg" style="grid-template-columns:repeat(3,1fr)">
+      <div class="k em">
+        <div class="kt"><span class="kl">Receita Realizada</span><div class="kb" style="background:var(--em-d)">📥</div></div>
+        <div class="kv ld" id="cfRec" style="font-size:20px">R$ —</div>
+        <div class="kf"><span class="kn">📡 Asaas — confirmado</span></div>
+      </div>
+      <div class="k sk">
+        <div class="kt"><span class="kl">Despesa Prevista</span><div class="kb" style="background:var(--sk-d)">📋</div></div>
+        <div class="kv ld" id="cfP" style="font-size:20px">R$ —</div>
+        <div class="kf"><span class="kn" id="cfPC">📊 Sheets</span></div>
+      </div>
+      <div class="k gd">
+        <div class="kt"><span class="kl">Despesa Realizada</span><div class="kb" style="background:var(--gd-d)">📤</div></div>
+        <div class="kv ld" id="cfR" style="font-size:20px">R$ —</div>
+        <div class="kf"><span class="kn" id="cfRC">📡 Asaas — saídas</span></div>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="cd2">
+        <div class="ch"><div><div class="ct">Despesas Previstas <span class="bg bg-s">Sheets</span></div><div class="csb">Contas a pagar lançadas na planilha</div></div></div>
+        <div class="txl" id="cfL"><div class="sm"><div class="ic">💰</div><h3>Carregando...</h3></div></div>
+      </div>
+      <div class="cd2">
+        <div class="ch"><div><div class="ct">Saídas Reais <span class="bg bg-r">Asaas</span></div><div class="csb">Débitos confirmados nas contas</div></div></div>
+        <div class="txl" id="cfSaidas"><div class="sm"><div class="ic">📤</div><h3>Carregando...</h3></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONCILIAÇÃO -->
+  <div class="sec" id="sec-conciliacao">
+    <div class="conc-stats" id="concStats"></div>
+    <div class="cd2">
+      <div class="ch">
+        <div>
+          <div class="ct">Conciliação de Despesas <span class="bg bg-w">Auto</span></div>
+          <div class="csb">Cruzamento automático: Sheets (previsto) × Asaas (realizado) — tolerância ±2% valor / ±5 dias</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <span class="st st-p" style="font-size:10px">✅ Conciliado</span>
+          <span class="st st-w" style="font-size:10px">⏳ Pendente</span>
+          <span class="st st-o" style="font-size:10px">⚠️ Sem match</span>
+          <span class="st st-c" style="font-size:10px">🆕 Novo</span>
+        </div>
+      </div>
+      <div id="concBox"><div class="sm"><div class="ic">🔗</div><h3>Aguardando conciliação...</h3><p>Sincronize o Apps Script para gerar a conciliação automática</p></div></div>
+    </div>
+  </div>
+
+  <!-- SALDOS -->
+  <div class="sec" id="sec-banking">
+    <div class="g2">
+      <div class="cd2">
+        <div class="ch"><div><div class="ct">Contas Bancárias <span class="bg bg-l">Live API</span></div><div class="csb">2 contas Asaas — saldos independentes</div></div></div>
+        <div class="bi"><div class="btp"><div class="bn"><div class="bdt" style="background:var(--em)"></div><span>🏪 Asaas — Rose Decor Loja</span></div><span class="st st-p">Ativo</span></div><div class="bbl" style="color:var(--em)" id="bL">R$ —</div><div class="bch" id="bLN">Aguardando</div></div>
+        <div class="bi"><div class="btp"><div class="bn"><div class="bdt" style="background:var(--vi)"></div><span>🎓 Asaas — Rose Decor Ensino</span></div><span class="st st-p">Ativo</span></div><div class="bbl" style="color:var(--vi)" id="bE">R$ —</div><div class="bch" id="bEN">Aguardando</div></div>
+        <div style="padding-top:14px;border-top:1px solid var(--b1);margin-top:8px"><div class="mr"><span class="ml">Saldo Total Consolidado</span><span class="mv" style="color:var(--em);font-size:16px" id="bT">R$ —</span></div></div>
+      </div>
+      <div class="cd2">
+        <div class="ch"><div><div class="ct">Receitas por Empresa <span class="bg bg-l">Asaas</span></div><div class="csb">Pagamentos confirmados no mês</div></div></div>
+        <div class="mr"><span class="ml">🏪 Recebido (Loja)</span><span class="mv" style="color:var(--em)" id="cRL">—</span></div>
+        <div class="mr"><span class="ml">🎓 Recebido (Ensino)</span><span class="mv" style="color:var(--em)" id="cRE">—</span></div>
+        <div class="mr"><span class="ml">💰 Total Consolidado</span><span class="mv" style="color:var(--em)" id="cRT">—</span></div>
+        <div style="border-top:1px solid var(--b1);margin-top:10px;padding-top:10px">
+          <div class="mr"><span class="ml">📤 Saídas Loja (Asaas)</span><span class="mv" style="color:var(--cr)" id="cSL">—</span></div>
+          <div class="mr"><span class="ml">📤 Saídas Ensino (Asaas)</span><span class="mv" style="color:var(--cr)" id="cSE">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- METAS -->
+  <div class="sec" id="sec-goals">
+    <div class="g2">
+      <div class="cd2"><div class="ch"><div><div class="ct">Metas do Mês</div></div></div><div id="glBox"><div class="sm"><div class="ic">🎯</div><h3>Aguardando dados...</h3></div></div></div>
+      <div class="cd2"><div class="ch"><div><div class="ct">KPIs Estratégicos</div></div></div>
+        <div class="mr"><span class="ml">Margem Bruta</span><span class="mv" id="mB">—</span></div>
+        <div class="mr"><span class="ml">Margem EBITDA</span><span class="mv" id="mE">—</span></div>
+        <div class="mr"><span class="ml">Margem Líquida</span><span class="mv" id="mL">—</span></div>
+        <div class="mr"><span class="ml">% Despesas / Receita</span><span class="mv" id="mDR">—</span></div>
+        <div class="mr"><span class="ml">Contas Conciliadas</span><span class="mv" id="mPT">—</span></div>
+        <div class="mr"><span class="ml">Saldo / Despesas</span><span class="mv" id="mSD">—</span></div>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<script>
+let URL_='',D={},mes=new Date().getMonth()+1,ano=new Date().getFullYear(),emp='consolidado',ch={};
+try{URL_=localStorage.getItem('rd3')||''}catch(e){}
+if(URL_)document.getElementById('cfg').classList.add('h');
+
+// Period tabs
+const pt=document.getElementById('ptabs');
+['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].forEach((m,i)=>{
+  if(i+1<=mes+1){const b=document.createElement('button');b.className='pt'+(i+1===mes?' ac':'');b.textContent=m;b.onclick=()=>{document.querySelectorAll('.pt').forEach(t=>t.classList.remove('ac'));b.classList.add('ac');mes=i+1;reload()};pt.appendChild(b)}
+});
+
+// Nav
+document.querySelectorAll('.ni[data-sec]').forEach(n=>{n.onclick=()=>{document.querySelectorAll('.ni').forEach(i=>i.classList.remove('ac'));document.querySelectorAll('.sec').forEach(s=>s.classList.remove('ac'));n.classList.add('ac');document.getElementById('sec-'+n.dataset.sec).classList.add('ac')}});
+
+function switchEmp(e){
+  emp=e;document.querySelectorAll('.emp-tab').forEach(t=>t.classList.remove('ac'));
+  document.querySelector(`.emp-tab[data-emp="${e}"]`).classList.add('ac');
+  const lbl=document.getElementById('empLabel');
+  const map={consolidado:['🏢 Consolidado','consolidado'],loja:['🏪 Rose Decor Loja','loja'],ensino:['🎓 Rose Decor Ensino','ensino']};
+  lbl.textContent=map[e][0];lbl.className='emp-indicator '+map[e][1];
+  reload();
+}
+
+function toggleCfg(){document.getElementById('cfg').classList.toggle('h');document.getElementById('cfgUrl').value=URL_}
+function saveCfg(){URL_=document.getElementById('cfgUrl').value.trim();try{localStorage.setItem('rd3',URL_)}catch(e){}toggleCfg();reload()}
+
+function fmt(v){if(v==null)return'R$ —';const n=+v;if(isNaN(n))return'R$ —';return Math.abs(n)>=1e3?'R$ '+(n/1e3).toFixed(1)+'k':'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fF(v){if(v==null)return'R$ 0,00';return'R$ '+(+v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fD(v){const n=+v;if(isNaN(n)||n===0)return'<span class="conc-delta-zero">—</span>';return n>0?`<span class="conc-delta-pos">+${fF(n)}</span>`:`<span class="conc-delta-neg">${fF(n)}</span>`}
+
+async function reload(){
+  const b=document.getElementById('bsync');b.classList.add('ld');b.textContent='↻ Carregando...';
+  if(!URL_){sc('⚠️ Configure a URL',false);b.classList.remove('ld');b.textContent='↻ Sincronizar';return}
+  sc('Conectando...',null);
+  try{
+    const p=new URLSearchParams({action:'all',mes,ano,empresa:emp});
+    const r=await fetch(URL_+'?'+p);D=await r.json();
+    if(D.error){sc('❌ '+D.error,false)}else{sc('✅ Conectado',true);renderAll()}
+  }catch(e){sc('❌ Erro: '+e.message,false)}
+  b.classList.remove('ld');b.textContent='↻ Sincronizar';
+  document.getElementById('stm').textContent=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+function sc(t,ok){document.getElementById('cLabel').textContent=t;['d1','d2','d3'].forEach(d=>{document.getElementById(d).className='cd'+(ok===false?' off':'')})}
+function renderAll(){renderOV();renderDRE();renderCF();renderBank();renderGoals();renderCharts();renderConciliacao()}
+
+function sK(id,v){const e=document.getElementById(id);if(!e)return;e.textContent=fmt(v);e.classList.remove('ld')}
+
+function splitHTML(lojaVal,ensinoVal){
+  if(emp!=='consolidado')return'';
+  return`<div class="kpi-split-item">🏪 Loja<span class="val em-c">${fmt(lojaVal)}</span></div><div class="kpi-split-item">🎓 Ensino<span class="val vi-c">${fmt(ensinoVal)}</span></div>`;
+}
+
+function renderOV(){
+  const o=D.overview;if(!o||!o.kpis)return;const k=o.kpis;
+  sK('kR',k.receitaBruta);
+  sK('kD',k.despesasRealizadas);
+  sK('kL',k.lucroLiquido);
+  sK('kS',k.saldoAsaas);
+
+  // Delta despesas: realizado vs previsto
+  const delta=k.despesasRealizadas-k.despesasPrevistas;
+  const dt=document.getElementById('kDelta');
+  dt.textContent=(delta>=0?'+':'')+fmt(delta);
+  dt.className='ktg '+(delta<=0?'up':'dn');
+  document.getElementById('kDN').textContent='previsto: '+fmt(k.despesasPrevistas);
+
+  // Margem líquida
+  const ml=k.margemLiquida,t=document.getElementById('kLT');
+  t.textContent=ml+'%';t.className='ktg '+(+ml>=0?'up':'dn');
+  document.getElementById('kLN').textContent='margem líquida';
+
+  // Splits por empresa
+  if(o.porEmpresa&&emp==='consolidado'){
+    const l=o.porEmpresa.loja,e=o.porEmpresa.ensino;
+    document.getElementById('kRS').innerHTML=splitHTML(l?.receitaBruta,e?.receitaBruta);
+    document.getElementById('kDS').innerHTML=splitHTML((l?.totalDespesasOp||0)+(l?.cpv||0),(e?.totalDespesasOp||0)+(e?.cpv||0));
+    document.getElementById('kLS').innerHTML=splitHTML(l?.lucroLiquido,e?.lucroLiquido);
+  } else {
+    ['kRS','kDS','kLS','kSS'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=''});
+  }
+
+  // Saldo split
+  if(D.saldos&&emp==='consolidado'){
+    document.getElementById('kSS').innerHTML=splitHTML(D.saldos.loja?.saldoTotal,D.saldos.ensino?.saldoTotal);
+    document.getElementById('kSN').textContent=D.saldos.consolidado?.ultimaAtualizacao||'Via API';
+  }
+
+  // Alertas
+  if(k.contasPendentes>0){
+    document.getElementById('alBox').style.display='flex';
+    document.getElementById('alMsg').innerHTML=`<strong>${k.contasPendentes} despesas pendentes</strong> no Sheets — aguardando pagamento`;
+  }
+  if(k.contasSemMatch>0){
+    document.getElementById('alConc').style.display='flex';
+    document.getElementById('alConcMsg').innerHTML=`<strong>${k.contasSemMatch} despesa(s) paga(s)</strong> sem correspondência no Asaas — revisar conciliação`;
+  }
+
+  // Receitas no extrato (overview)
+  const recList=D.fluxo?.receitas||[];
+  const txC=document.getElementById('txL');
+  if(!recList.length){txC.innerHTML='<div class="sm"><div class="ic">📡</div><h3>Sem receitas no período</h3><p>Verifique se as APIs estão sincronizadas</p></div>';return}
+  txC.innerHTML=recList.slice(0,20).map(r=>{
+    const eTag=r.empresa==='loja'?'<span class="emp-tag loja">LOJA</span>':'<span class="emp-tag ensino">ENSINO</span>';
+    return`<div class="txr"><div class="txle"><div class="txi in">📥</div><div class="txf"><h4>${r.descricao||r.tipoPagamento||'Recebimento'} ${eTag}</h4><span>${r.tipoPagamento||''} · ${r.dataPagamento}</span></div></div><div class="txri"><div class="txa in">+${fF(r.valor)}</div><div class="txd"><span class="st st-p">● Recebido</span></div></div></div>`
+  }).join('');
+}
+
+function dreRow(label,realizado,previsto,isTotal,indent,positive){
+  const delta=realizado-previsto;
+  const tdCls=positive?(realizado>=0?'pos':'neg'):'neg';
+  const prefix=isTotal?'= ':indent?'(-) ':'(-) ';
+  const trCls=isTotal?'rt':indent?'rs':'rh';
+  const deltaHtml=previsto>0?`<small class="${delta<=0?'delta-pos':'delta-neg'}" style="display:block;font-size:9px;color:${delta<=0?'var(--em)':'var(--cr)'}">${delta>0?'+':''}${fF(delta)} vs prev.</small>`:'';
+  return`<tr class="${trCls}"><td>${prefix}${label}</td><td class="${tdCls}">${fF(realizado)}${deltaHtml}</td><td style="color:var(--sk);opacity:.7">${fF(previsto)}</td><td>${previsto>0&&realizado>0?((realizado/previsto)*100).toFixed(0)+'%':'—'}</td></tr>`;
+}
+
+function renderDRE(){
+  const d=D.dre;if(!d||!d.resumo)return;const r=d.resumo;
+  const av=v=>r.receitaBruta>0?((v/r.receitaBruta)*100).toFixed(1)+'%':'0%';
+
+  document.getElementById('dreBox').innerHTML=`<table class="dt">
+    <thead><tr>
+      <th style="width:40%">Conta</th>
+      <th>Realizado <span class="fonte-badge fonte-asaas">ASAAS</span></th>
+      <th>Previsto <span class="fonte-badge fonte-sheets">SHEETS</span></th>
+      <th>AV %</th>
+    </tr></thead>
+    <tbody>
+      <tr class="rh"><td>RECEITA OPERACIONAL BRUTA <span class="fonte-badge fonte-asaas">ASAAS</span></td><td class="pos">${fF(r.receitaBruta)}</td><td style="color:var(--t3)">—</td><td>100%</td></tr>
+      ${r.receitaBrutaLoja!=null?`
+      <tr class="rs"><td>↳ 🏪 Rose Decor Loja</td><td class="pos">${fF(r.receitaBrutaLoja)}</td><td>—</td><td>${av(r.receitaBrutaLoja)}</td></tr>
+      <tr class="rs"><td>↳ 🎓 Rose Decor Ensino</td><td class="pos">${fF(r.receitaBrutaEnsino)}</td><td>—</td><td>${av(r.receitaBrutaEnsino)}</td></tr>`:''}
+      ${dreRow('DEDUÇÕES',r.deducoes,r.prevDeducoes||0,false,false,false)}
+      <tr class="rt"><td>= RECEITA LÍQUIDA</td><td class="pos">${fF(r.receitaLiquida)}</td><td style="color:var(--t3)">—</td><td>${av(r.receitaLiquida)}</td></tr>
+      ${dreRow('CUSTO PRODUTOS/SERVIÇOS',r.cpv,r.prevCpv||0,false,false,false)}
+      <tr class="rt"><td>= LUCRO BRUTO</td><td class="${r.lucroBruto>=0?'pos':'neg'}">${fF(r.lucroBruto)}</td><td style="color:var(--t3)">—</td><td>${r.margemBruta}%</td></tr>
+      ${dreRow('Despesas Pessoal',r.despesasPessoal,r.prevDespPessoal||0,false,false,false)}
+      ${dreRow('Despesas Marketing',r.despesasMarketing,r.prevDespMarketing||0,false,false,false)}
+      ${dreRow('Despesas Administrativas',r.despesasAdmin,r.prevDespAdmin||0,false,false,false)}
+      <tr class="rt"><td>= EBITDA</td><td class="${r.ebitda>=0?'pos':'neg'}">${fF(r.ebitda)}</td><td style="color:var(--t3)">—</td><td>${r.margemEbitda}%</td></tr>
+      ${dreRow('Despesas Financeiras',r.despesasFinanceiras,r.prevDespFinanceiras||0,false,false,false)}
+      <tr class="rt" style="background:rgba(61,232,160,.04)">
+        <td style="font-size:14px;font-weight:800">= LUCRO LÍQUIDO</td>
+        <td class="${r.lucroLiquido>=0?'pos':'neg'}" style="font-size:15px">${fF(r.lucroLiquido)}</td>
+        <td style="color:var(--t3)">—</td>
+        <td style="font-weight:800">${r.margemLiquida}%</td>
+      </tr>
+      ${r.naoClassificado>0?`<tr><td style="color:var(--gd)">⚠️ Saídas não classificadas (Asaas)</td><td style="color:var(--gd)">${fF(r.naoClassificado)}</td><td>—</td><td></td></tr>`:''}
+    </tbody>
+  </table>`;
+
+  const sc2=(id,v)=>{const e=document.getElementById(id);if(!e)return;e.textContent=v+'%';e.style.color=+v>0?'var(--em)':'var(--cr)'};
+  sc2('mB',r.margemBruta);sc2('mE',r.margemEbitda);sc2('mL',r.margemLiquida);
+  if(r.receitaBruta>0)document.getElementById('mDR').textContent=((r.totalDespesasOp/r.receitaBruta)*100).toFixed(1)+'%';
+
+  // Split por empresa
+  const sb=document.getElementById('dreSplitBox');
+  if(emp==='consolidado'&&D.overview?.porEmpresa){
+    sb.style.display='block';
+    const renderMini=(el,rd)=>{if(!rd)return;
+      document.getElementById(el).innerHTML=`
+        <div class="mr"><span class="ml">Receita Bruta</span><span class="mv pos">${fF(rd.receitaBruta)}</span></div>
+        <div class="mr"><span class="ml">Lucro Bruto</span><span class="mv ${rd.lucroBruto>=0?'pos':'neg'}">${fF(rd.lucroBruto)}</span></div>
+        <div class="mr"><span class="ml">EBITDA</span><span class="mv ${rd.ebitda>=0?'pos':'neg'}">${fF(rd.ebitda)}</span></div>
+        <div class="mr" style="border-top:2px solid var(--b2);padding-top:12px;margin-top:4px"><span class="ml" style="font-weight:700">Lucro Líquido</span><span class="mv" style="font-size:15px;color:${rd.lucroLiquido>=0?'var(--em)':'var(--cr)'}">${fF(rd.lucroLiquido)}</span></div>
+        <div class="mr"><span class="ml" style="font-size:10px">Margem Líquida</span><span class="mv" style="color:${+rd.margemLiquida>=0?'var(--em)':'var(--cr)'}">${rd.margemLiquida}%</span></div>`;
+    };
+    renderMini('dreLoja',D.overview.porEmpresa.loja);
+    renderMini('dreEnsino',D.overview.porEmpresa.ensino);
+  } else sb.style.display='none';
+}
+
+function renderCF(){
+  const f=D.fluxo;if(!f)return;
+  const t=f.totais||{};
+
+  // KPIs
+  const s=(id,v)=>{const e=document.getElementById(id);if(!e)return;e.textContent=fF(v);e.classList.remove('ld')};
+  s('cfRec',t.receitaRealizada||0);
+  s('cfP',t.saidaPrevista||0);
+  s('cfR',t.saidaRealizada||0);
+  document.getElementById('cfPC').textContent=(t.pendentes||0)+' pendentes · '+(t.pagos||0)+' pagos';
+  document.getElementById('cfRC').textContent='📡 Asaas — saídas confirmadas';
+
+  // Despesas previstas (Sheets)
+  const cl=document.getElementById('cfL');
+  if(!f.registros?.length){cl.innerHTML='<div class="sm"><div class="ic">📋</div><h3>Sem lançamentos</h3></div>';
+  }else{
+    cl.innerHTML=f.registros.slice(0,40).map(r=>{
+      const eTag=r.empresa==='loja'?'<span class="emp-tag loja">LOJA</span>':'<span class="emp-tag ensino">ENSINO</span>';
+      return`<div class="txr"><div class="txle"><div class="txi ${r.pago?'out':'pend'}">${r.pago?'📤':'⏳'}</div><div class="txf"><h4>${r.historico} ${eTag}</h4><span>${r.classificacao}</span></div></div><div class="txri"><div class="txa ${r.pago?'out':'pend'}">${fF(r.pago?r.valorRealizado:r.valorPrevisto)}</div><div class="txd">${r.vencimento} <span class="st ${r.pago?'st-p':'st-w'}">${r.pago?'● Pago':'● Pendente'}</span></div></div></div>`
+    }).join('');
+  }
+
+  // Saídas reais (Asaas)
+  const cs=document.getElementById('cfSaidas');
+  if(!f.saidas?.length){cs.innerHTML='<div class="sm"><div class="ic">📤</div><h3>Sem saídas no período</h3></div>';
+  }else{
+    cs.innerHTML=f.saidas.slice(0,40).map(r=>{
+      const eTag=r.empresa==='loja'?'<span class="emp-tag loja">LOJA</span>':'<span class="emp-tag ensino">ENSINO</span>';
+      return`<div class="txr"><div class="txle"><div class="txi out">📤</div><div class="txf"><h4>${r.descricao||r.tipo} ${eTag}</h4><span>${r.tipo||''}</span></div></div><div class="txri"><div class="txa out">-${fF(r.valor)}</div><div class="txd">${r.data} <span class="st st-o">● Asaas</span></div></div></div>`
+    }).join('');
+  }
+}
+
+function renderConciliacao(){
+  const c=D.conciliacao;if(!c)return;
+  const rs=c.resumo||{};
+  const linhas=c.linhas||[];
+
+  // Stats
+  document.getElementById('concStats').innerHTML=`
+    <div class="conc-stat ok"><div class="conc-stat-n">${rs.conciliados||0}</div><div class="conc-stat-l">✅ Conciliados</div></div>
+    <div class="conc-stat pend"><div class="conc-stat-n">${rs.pendentes||0}</div><div class="conc-stat-l">⏳ Pendentes</div></div>
+    <div class="conc-stat miss"><div class="conc-stat-n">${rs.semMatch||0}</div><div class="conc-stat-l">⚠️ Sem match</div></div>
+    <div class="conc-stat new"><div class="conc-stat-n">${rs.semPrevisao||0}</div><div class="conc-stat-l">🆕 Não previstos</div></div>`;
+
+  if(!linhas.length){
+    document.getElementById('concBox').innerHTML='<div class="sm"><div class="ic">🔗</div><h3>Nenhum item para conciliar</h3><p>Sincronize o Apps Script para gerar a conciliação</p></div>';
+    return;
+  }
+
+  const stMap={'CONCILIADO':'ok','PENDENTE':'pend','SEM MATCH':'miss','SEM PREVISÃO':'new'};
+  const stCls=s=>Object.entries(stMap).find(([k])=>s.includes(k))?.[1]||'pend';
+
+  document.getElementById('concBox').innerHTML=`
+    <div class="conc-hd">
+      <span>Unidade</span><span>Histórico / Classificação</span>
+      <span style="text-align:right">Previsto</span><span style="text-align:right">Realizado</span>
+      <span>Status</span><span style="text-align:right">Δ Diferença</span>
+    </div>
+    ${linhas.map(l=>`
+    <div class="conc-row ${stCls(l.status)}">
+      <span>${l.unidade==='Rosedecor'||l.unidade==='loja'?'🏪 Loja':'🎓 Ensino'}</span>
+      <span><strong style="font-size:11px">${l.historico||l.classificacao}</strong><br><small style="color:var(--t3)">${l.classificacao}</small></span>
+      <span class="conc-val" style="text-align:right;color:var(--sk)">${l.valorPrevisto?fF(l.valorPrevisto):'—'}</span>
+      <span class="conc-val" style="text-align:right;color:${l.valorRealizado>0?'var(--cr)':'var(--t3)'}">${l.valorRealizado?fF(l.valorRealizado):'—'}</span>
+      <span><span class="st ${stCls(l.status)==='ok'?'st-p':stCls(l.status)==='pend'?'st-w':stCls(l.status)==='miss'?'st-o':'st-c'}" style="font-size:9px">${l.status.split(' ')[0]+' '+l.status.split(' ')[1]}</span></span>
+      <span style="text-align:right">${fD(l.delta)}</span>
+    </div>`).join('')}`;
+
+  // KPI conciliação
+  const tot=rs.conciliados+rs.pendentes+rs.semMatch+rs.semPrevisao;
+  document.getElementById('mPT').textContent=tot>0?rs.conciliados+'/'+tot+' ('+((rs.conciliados/tot)*100).toFixed(0)+'%)':'—';
+}
+
+function renderBank(){
+  if(D.saldos){
+    const l=D.saldos.loja,e=D.saldos.ensino,c=D.saldos.consolidado;
+    document.getElementById('bL').textContent=fF(l?.saldoTotal);
+    document.getElementById('bLN').textContent='Atualizado: '+(l?.ultimaAtualizacao||'—');
+    document.getElementById('bE').textContent=fF(e?.saldoTotal);
+    document.getElementById('bEN').textContent='Atualizado: '+(e?.ultimaAtualizacao||'—');
+    document.getElementById('bT').textContent=fF(c?.saldoTotal);
+  }
+  // Receitas por empresa (do fluxo)
+  if(D.fluxo?.totais){
+    const t=D.fluxo.totais;
+    document.getElementById('cRL').textContent=fF(t.receitaLoja||0);
+    document.getElementById('cRE').textContent=fF(t.receitaEnsino||0);
+    document.getElementById('cRT').textContent=fF(t.receitaRealizada||0);
+  }
+  // Saídas por empresa — soma do extrato
+  if(D.fluxo?.saidas){
+    const sl=D.fluxo.saidas.filter(s=>s.empresa==='loja').reduce((a,s)=>a+s.valor,0);
+    const se=D.fluxo.saidas.filter(s=>s.empresa==='ensino').reduce((a,s)=>a+s.valor,0);
+    document.getElementById('cSL').textContent=fF(sl);
+    document.getElementById('cSE').textContent=fF(se);
+  }
+  if(D.saldos&&D.dre?.resumo){
+    const dp=D.dre.resumo.totalDespesasOp;
+    if(dp>0){const r=(D.saldos.consolidado?.saldoTotal/dp).toFixed(1);const e=document.getElementById('mSD');e.textContent=r+'x';e.style.color=+r>=1?'var(--em)':'var(--cr)'}
+  }
+}
+
+function renderGoals(){
+  const d=D.dre;if(!d?.resumo)return;const r=d.resumo;
+  const gs=[
+    {l:'🎯 Faturamento Bruto',c:r.receitaBruta,t:200000,bg:'linear-gradient(90deg,#3de8a0,#059669)'},
+    {l:'💰 Margem Líquida',c:+r.margemLiquida,t:30,bg:'linear-gradient(90deg,#ffc145,#d97706)',pct:1},
+    {l:'📉 Desp.Op/Receita',c:r.receitaBruta>0?(r.totalDespesasOp/r.receitaBruta)*100:0,t:40,bg:'linear-gradient(90deg,#5eaaff,#2563eb)',pct:1,inv:1},
+  ];
+  document.getElementById('glBox').innerHTML=gs.map(g=>{
+    const p=Math.min((g.inv?(g.t/Math.max(g.c,.01)):(g.c/g.t))*100,100).toFixed(1);
+    return`<div class="gl"><div class="glt"><span class="gll">${g.l}</span><span class="gln">${g.pct?g.c.toFixed(1)+'%':fF(g.c)} / ${g.pct?g.t+'%':fF(g.t)}</span></div><div class="glk"><div class="glf" style="width:${p}%;background:${g.bg}"></div></div><div class="glp">${p}%</div></div>`
+  }).join('');
+}
+
+function renderCharts(){
+  Chart.defaults.color='#8a95ad';Chart.defaults.borderColor='rgba(255,255,255,.06)';
+  Chart.defaults.font.family="'Outfit',sans-serif";Chart.defaults.font.size=11;
+  const d=D.dre;if(!d?.resumo)return;const r=d.resumo;
+  const mName=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][mes-1]+'/'+ano;
+
+  if(ch.c1)ch.c1.destroy();
+  ch.c1=new Chart(document.getElementById('c1'),{type:'bar',data:{labels:[mName],datasets:[
+    {label:'Receita (Asaas)',data:[r.receitaBruta/1e3],backgroundColor:'rgba(61,232,160,.75)',borderRadius:6,barPercentage:.3},
+    {label:'Desp. Previstas',data:[(r.prevDespPessoal+r.prevDespMarketing+r.prevDespAdmin+r.prevCpv)/1e3],backgroundColor:'rgba(94,170,255,.4)',borderRadius:6,barPercentage:.3},
+    {label:'Desp. Realizadas',data:[(r.totalDespesasOp+r.cpv)/1e3],backgroundColor:'rgba(255,107,122,.65)',borderRadius:6,barPercentage:.3},
+    {label:'Lucro Líquido',data:[r.lucroLiquido/1e3],backgroundColor:'rgba(255,193,69,.65)',borderRadius:6,barPercentage:.3}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',align:'end',labels:{usePointStyle:true,pointStyle:'circle',padding:12,font:{size:10}}},tooltip:{backgroundColor:'#1a2336',borderColor:'#2a3550',borderWidth:1,padding:10,callbacks:{label:c=>` ${c.dataset.label}: R$ ${c.raw.toFixed(1)}k`}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'R$'+v+'k'},grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false}}}}});
+
+  if(ch.c2)ch.c2.destroy();
+  ch.c2=new Chart(document.getElementById('c2'),{type:'doughnut',data:{labels:['Pessoal','Marketing','Admin','CPV','Financeiro','Não classif.'],datasets:[{data:[r.despesasPessoal,r.despesasMarketing,r.despesasAdmin,r.cpv,r.despesasFinanceiras,r.naoClassificado].map(v=>(v||0)/1e3),backgroundColor:['#e8728a','#5eaaff','#b18cff','#ff6b7a','#ffc145','#556178'],borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'circle',padding:10,font:{size:10}}},tooltip:{backgroundColor:'#1a2336',borderColor:'#2a3550',borderWidth:1,padding:10,callbacks:{label:c=>` R$ ${c.raw.toFixed(1)}k`}}}}});
+}
+
+if(URL_)reload();
+</script>
+</body>
+</html>
