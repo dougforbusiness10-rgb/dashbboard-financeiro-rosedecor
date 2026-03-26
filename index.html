@@ -216,8 +216,9 @@ body{font-family:var(--fd);background:var(--void);color:var(--t1);min-height:100
     </div>
     <div class="hd-a">
       <div class="ptabs" id="ptabs"></div>
-      <button class="bsync" id="bsync" onclick="reload()">↻ Sincronizar</button>
+      <button class="bsync" id="bsync" onclick="resetTimer();reload()">↻ Sincronizar</button>
       <span class="stm" id="stm">—</span>
+      <span class="stm" id="countdown" style="color:var(--em);min-width:52px;text-align:right" title="Próxima atualização automática">⟳ 5:00</span>
     </div>
   </div>
 
@@ -417,7 +418,7 @@ function switchEmp(e){
 }
 
 function toggleCfg(){document.getElementById('cfg').classList.toggle('h');document.getElementById('cfgUrl').value=URL_}
-function saveCfg(){URL_=document.getElementById('cfgUrl').value.trim();try{localStorage.setItem('rd3',URL_)}catch(e){}toggleCfg();reload()}
+function saveCfg(){URL_=document.getElementById('cfgUrl').value.trim();try{localStorage.setItem('rd3',URL_)}catch(e){}toggleCfg();reload();startTimer();}
 
 function fmt(v){if(v==null)return'R$ —';const n=+v;if(isNaN(n))return'R$ —';return Math.abs(n)>=1e3?'R$ '+(n/1e3).toFixed(1)+'k':'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fF(v){if(v==null)return'R$ 0,00';return'R$ '+(+v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
@@ -701,6 +702,49 @@ function renderCharts(){
 }
 
 if(URL_)reload();
+
+// ── AUTO-REFRESH A CADA 5 MINUTOS ──
+const REFRESH_SEC = 5 * 60; // 300 segundos
+let remaining = REFRESH_SEC;
+let countdownTimer = null;
+let refreshTimer = null;
+
+function startTimer() {
+  clearInterval(countdownTimer);
+  clearTimeout(refreshTimer);
+  remaining = REFRESH_SEC;
+  updateCountdown();
+
+  countdownTimer = setInterval(() => {
+    remaining--;
+    updateCountdown();
+    if (remaining <= 0) {
+      remaining = REFRESH_SEC;
+      if (URL_) reload();
+    }
+  }, 1000);
+}
+
+function resetTimer() {
+  remaining = REFRESH_SEC;
+  updateCountdown();
+}
+
+function updateCountdown() {
+  const el = document.getElementById('countdown');
+  if (!el) return;
+  const m = Math.floor(remaining / 60);
+  const s = String(remaining % 60).padStart(2, '0');
+  el.textContent = `⟳ ${m}:${s}`;
+  // Fica vermelho nos últimos 30 segundos
+  el.style.color = remaining <= 30 ? 'var(--cr)' : 'var(--em)';
+}
+
+// Inicia o timer assim que a URL estiver configurada
+if (URL_) startTimer();
+
+// Reinicia o timer sempre que o usuário salva a URL
+if (URL_) startTimer();
 </script>
 </body>
 </html>
