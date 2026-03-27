@@ -1038,7 +1038,8 @@ let capSearchTerm = '';
 let capDataAtual = [];
 
 function renderCAP(d) {
-  capDataAtual = d.contas || [];
+  // Suporte a múltiplos formatos de resposta do backend
+  capDataAtual = d.contas || d.despesas || [];
   const rs = d.resumo || {};
 
   const html = `
@@ -1091,27 +1092,49 @@ function renderCAPList() {
     return;
   }
 
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+
+  function calcStatus(c) {
+    if (c.status) return c.status; // usa o que veio do backend
+    if (c.pago || (c.valorRealizado && c.valorRealizado > 0)) return 'pago';
+    // tenta calcular pela data de vencimento
+    const v = c.vencimento || c.dataPrevista || '';
+    if (!v) return 'pendente';
+    const parts = v.split('/');
+    if (parts.length === 3) {
+      const dt = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+      dt.setHours(0,0,0,0);
+      const diff = Math.floor((hoje - dt) / 86400000);
+      if (diff > 0) return 'atrasado';
+      if (diff >= -3) return 'vencendo';
+    }
+    return 'pendente';
+  }
+
   const statusMap = {
-    pago:     {cl:'out', pill:'sp-ok',   txt:'✅ Pago',      icn:'✅'},
-    pendente: {cl:'pend',pill:'sp-pend', txt:'⏳ Pendente',  icn:'⏳'},
-    atrasado: {cl:'atras',pill:'sp-atras',txt:'',            icn:'🚨'},
-    vencendo: {cl:'venc', pill:'sp-venc', txt:'⚡ Vence hoje',icn:'⚡'},
+    pago:     {cl:'out',  pill:'sp-ok',   txt:'✅ Pago',       icn:'✅'},
+    pendente: {cl:'pend', pill:'sp-pend', txt:'⏳ Pendente',   icn:'⏳'},
+    atrasado: {cl:'atras',pill:'sp-atras',txt:'',              icn:'🚨'},
+    vencendo: {cl:'venc', pill:'sp-venc', txt:'⚡ Vence hoje', icn:'⚡'},
   };
 
   el.innerHTML = lista.map(c => {
-    const s = statusMap[c.status] || statusMap.pendente;
-    const txtStatus = c.status === 'atrasado' ? `🚨 ${c.diasAtraso}d atraso` : s.txt;
+    const st = calcStatus(c);
+    const s = statusMap[st] || statusMap.pendente;
+    const txtStatus = st === 'atrasado' ? `🚨 ${c.diasAtraso||'?'}d atraso` : s.txt;
+    const valorExibido = c.valorPrevisto || c.valor || 0;
+    const vencExibido  = c.vencimento || c.dataPrevista || '—';
     return `<div class="tx-item">
       <div class="tx-left">
         <div class="tx-icon ${s.cl}">${s.icn}</div>
         <div class="tx-info">
-          <h4>${c.historico} ${eTag(c.empresa)}</h4>
-          <span>${c.classificacao}${c.vencimento ? ' · Venc: '+c.vencimento : ''}${c.formaPagamento?' · '+c.formaPagamento:''}</span>
+          <h4>${c.historico||c.descricao||'—'} ${eTag(c.empresa)}</h4>
+          <span>${c.classificacao||'—'}${vencExibido !== '—' ? ' · Venc: '+vencExibido : ''}${c.formaPagamento?' · '+c.formaPagamento:''}</span>
         </div>
       </div>
       <div class="tx-right">
-        <div class="tx-amount ${s.cl}">${fF(c.valorPrevisto)}</div>
-        ${c.pago ? `<div style="font-size:10px;color:var(--t3)">Pago: ${fF(c.valorRealizado)}</div>` : ''}
+        <div class="tx-amount ${s.cl}">${fF(valorExibido)}</div>
+        ${c.pago || c.valorRealizado > 0 ? `<div style="font-size:10px;color:var(--t3)">Pago: ${fF(c.valorRealizado||0)}</div>` : ''}
         <span class="status-pill ${s.pill}">${txtStatus}</span>
       </div>
     </div>`;
@@ -1486,19 +1509,31 @@ function renderBanking(d) {
 
 // ── METAS ──────────────────────────────────────────────────
 function renderMetas(d) {
-  // Usa dados do DRE se disponíveis
   const dr = dataCache['dre']?.resumo;
   if (!dr) {
-    document.getElementById('metas-content').innerHTML = `<div class="empty"><div class="empty-icon">🎯</div><h3>Carregue o DRE primeiro</h3><p><button class="btn-primary" onclick="loadSec('dre').then(()=>loadSec('metas'))">Carregar DRE</button></p></div>`;
+    document.getElementById('metas-content').innerHTML = '<div class="sec-loading"><div class="spin"></div>Carregando DRE para metas...</div>';
+    // Carrega DRE em segundo plano e re-renderiza metas
+    const oldSec = secAtual;
+    loadSec('dre');
+    setTimeout(() => {
+      const dr2 = dataCache['dre']?.resumo;
+      if (dr2 && oldSec === 'metas') renderMetasComDados(dr2);
+      else if (!dr2) document.getElementById('metas-content').innerHTML = '<div class="empty"><div class="empty-icon">🎯</div><h3>Acesse a aba DRE primeiro</h3></div>';
+    }, 4000);
     return;
   }
+  renderMetasComDados(dr);
+}
+
+function renderMetasComDados(dr) {
+  const rec = dr.receitaBruta || 0;
   const metas = [
-    {l:'🎯 Faturamento Bruto',c:dr.receitaBruta,t:200000,bg:'linear-gradient(90deg,var(--em),#059669)'},
-    {l:'💰 Margem Líquida',c:+dr.margemLiquida,t:30,bg:'linear-gradient(90deg,var(--gd),#d97706)',pct:true},
-    {l:'📉 Desp./Receita',c:dr.receitaBruta>0?(dr.totalDespesasOp/dr.receitaBruta)*100:0,t:40,bg:'linear-gradient(90deg,var(--sk),#2563eb)',pct:true,inv:true},
+    {l:'🎯 Faturamento Bruto', c: rec, t:200000, bg:'linear-gradient(90deg,var(--em),#059669)'},
+    {l:'💰 Margem Líquida',    c: +(dr.margemLiquida||0), t:30, bg:'linear-gradient(90deg,var(--gd),#d97706)', pct:true},
+    {l:'📉 Desp./Receita',     c: rec>0?((dr.totalDespesasOp||0)/rec)*100:0, t:40, bg:'linear-gradient(90deg,var(--sk),#2563eb)', pct:true, inv:true},
   ];
-  document.getElementById('metas-content').innerHTML = metas.map(g=>{
-    const p=Math.min((g.inv?(g.t/Math.max(g.c,.01)):(g.c/g.t))*100,100).toFixed(1);
+  document.getElementById('metas-content').innerHTML = metas.map(g => {
+    const p = Math.min((g.inv ? (g.t/Math.max(g.c,.01)) : (g.c/g.t))*100, 100).toFixed(1);
     return `<div class="card mb20"><div class="meta-item"><div class="meta-top"><span class="meta-label">${g.l}</span><span class="meta-vals">${g.pct?g.c.toFixed(1)+'%':fK(g.c)} / ${g.pct?g.t+'%':fK(g.t)}</span></div><div class="meta-track"><div class="meta-fill" style="width:${p}%;background:${g.bg}"></div></div><div class="meta-pct">${p}% da meta</div></div></div>`;
   }).join('');
 }
